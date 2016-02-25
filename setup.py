@@ -4,10 +4,6 @@ from setuptools import setup
 from subprocess import call
 
 def convert_readme():
-    try:
-        call(["pandoc", "-f", "markdown_github", "-t",  "rst", "-o",  "README.txt", "README.markdown"])
-    except OSError:
-        pass
     return open('README.txt').read()
 
 setup(
