@@ -9,10 +9,12 @@
 
  */
  (function($) {
+    var isChangeUrl = /\/change\/?/i.test(window.location.href),
+        urlPrefix = isChangeUrl ? '../' : '';
     var GenericAdmin = {
         url_array: null,
         fields: null,
-        obj_url: "../obj-data/",
+        obj_url: urlPrefix + "../obj-data/",
         admin_media_url: window.__admin_media_prefix__,
 		popup: '_popup',
         
@@ -73,7 +75,7 @@
         },
         
         getLookupUrl: function(cID) {
-            return '../../../' + this.url_array[cID][0] + '/' + this.getLookupUrlParams(cID);
+            return urlPrefix + '../../../' + this.url_array[cID][0] + '/' + this.getLookupUrlParams(cID);
         },
         
         getFkId: function() {
@@ -108,9 +110,12 @@
                 url = this.getLookupUrl(this.cID),
                 id = 'lookup_' + this.getFkId(),
                 link = '<a class="related-lookup" id="' + id + '" href="' + url + '">';
-                
-            link = link + '<img src="' + this.admin_media_url.replace(/\/?$/, '/') + 'img/selector-search.gif" style="cursor: pointer; margin-left: 5px; margin-right: 10px;" width="16" height="16" alt="Lookup"></a>';
-            link = link + '<strong id="lookup_text_'+ this.getFkId() +'" margin-left: 5px"><a target="_new" href="#"></a><span></span></strong>';
+            // admin media is removed in django 1.9
+            if (this.admin_media_url !== undefined) {
+                link = link + '<img src="' + this.admin_media_url.replace(/\/?$/, '/') + 'img/selector-search.gif" style="cursor: pointer; margin-left: 5px; margin-right: 10px;" width="16" height="16" alt="Lookup">';
+            }
+            link += '</a>';
+            link += '<strong id="lookup_text_'+ this.getFkId() +'" margin-left: 5px"><a target="_new" href="#"></a><span></span></strong>';
 
             // insert link html after input element
             this.object_input.after(link);
@@ -306,7 +311,7 @@
 
     $(document).ready(function() {
         $.ajax({
-            url: '../genericadmin-init/',
+            url: urlPrefix + '../genericadmin-init/',
             dataType: 'json',
             success: function(data) {
                 var url_array = data.url_array,

@@ -1,6 +1,7 @@
 import json
 from functools import update_wrapper
 
+from django import VERSION as DJ_VERSION
 from django.contrib import admin
 from django.conf.urls import patterns, url
 from django.conf import settings
@@ -74,12 +75,18 @@ class BaseGenericModelAdmin(object):
                     })
                     
         if hasattr(self, 'inlines') and len(self.inlines) > 0:
-            for FormSet, inline in zip(self.get_formsets(request), self.get_inline_instances(request)):
+            for FormSet, inline in self.get_formsets_with_inlines(request):
                 if hasattr(inline, 'get_generic_field_list'):
                     prefix = FormSet.get_default_prefix()
                     field_list = field_list + inline.get_generic_field_list(request, prefix)
 
         return field_list
+
+    def get_formsets_with_inlines(self, request, *args, **kwargs):
+        # get_formsets has been deprecated since 1.7 and been removed in 1.9
+        if DJ_VERSION < (1, 9):
+            return zip(self.get_formsets(request), self.get_inline_instances(request))
+        return super(BaseGenericModelAdmin, self).get_formsets_with_inlines(request, *args, **kwargs)
 
     def get_urls(self):
         def wrap(view):
