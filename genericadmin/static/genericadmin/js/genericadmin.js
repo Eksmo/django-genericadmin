@@ -9,7 +9,7 @@
 
  */
  (function($) {
-    var isChangeUrl = /\/change\/?/i.test(window.location.href),
+    var isChangeUrl = /\/change\/?$/i.test(window.location.href),
         urlPrefix = isChangeUrl ? '../' : '';
     var GenericAdmin = {
         url_array: null,
