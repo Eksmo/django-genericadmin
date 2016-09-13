@@ -4,10 +4,13 @@ from functools import update_wrapper
 from django.contrib import admin
 from django.conf.urls import patterns, url
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import admin as GA
+try:
+    from django.contrib.contenttypes.generic import GenericForeignKey,  GenericTabularInline, GenericStackedInline
+except ImportError:
+    from django.contrib.contenttypes.admin import GenericStackedInline, GenericTabularInline
+    from django.contrib.contenttypes.fields import GenericForeignKey
 
+from django.contrib.contenttypes.models import ContentType
 try:
     from django.utils.encoding import force_text 
 except ImportError:
@@ -39,6 +42,9 @@ class BaseGenericModelAdmin(object):
             media = []
         media.append(JS_PATH + 'genericadmin.js')
         self.Media.js = tuple(media)
+        
+        self.content_type_whitelist = [s.lower() for s in self.content_type_whitelist]
+        self.content_type_blacklist = [s.lower() for s in self.content_type_blacklist]        
             
         super(BaseGenericModelAdmin, self).__init__(model, admin_site)
 
@@ -58,11 +64,10 @@ class BaseGenericModelAdmin(object):
                     field_list.append(fields)
         else:    
             for field in self.model._meta.virtual_fields:
-                if (isinstance(field, GenericForeignKey) and
-                            field.ct_field not in exclude and
-                            field.fk_field not in exclude):
+                if isinstance(field, GenericForeignKey) and \
+                        field.ct_field not in exclude and field.fk_field not in exclude:
                     field_list.append({
-                        'ct_field': field.ct_field,
+                        'ct_field': field.ct_field, 
                         'fk_field': field.fk_field,
                         'inline': prefix != '',
                         'prefix': prefix,
@@ -70,9 +75,10 @@ class BaseGenericModelAdmin(object):
                     
         if hasattr(self, 'inlines') and len(self.inlines) > 0:
             for FormSet, inline in zip(self.get_formsets(request), self.get_inline_instances(request)):
-                prefix = FormSet.get_default_prefix()
-                field_list = field_list + inline.get_generic_field_list(request, prefix)
-        
+                if hasattr(inline, 'get_generic_field_list'):
+                    prefix = FormSet.get_default_prefix()
+                    field_list = field_list + inline.get_generic_field_list(request, prefix)
+
         return field_list
 
     def get_urls(self):
@@ -135,17 +141,18 @@ class BaseGenericModelAdmin(object):
         else:
             resp = ''
         return HttpResponse(resp, content_type='application/json')
+        
 
 
 class GenericAdminModelAdmin(BaseGenericModelAdmin, admin.ModelAdmin):
     """Model admin for generic relations. """
 
 
-class GenericTabularInline(BaseGenericModelAdmin, GA.GenericTabularInline):
+class GenericTabularInline(BaseGenericModelAdmin, GenericTabularInline):
     """Model admin for generic tabular inlines. """ 
 
 
-class GenericStackedInline(BaseGenericModelAdmin, GA.GenericStackedInline):
+class GenericStackedInline(BaseGenericModelAdmin, GenericStackedInline):
     """Model admin for generic stacked inlines. """
 
 
